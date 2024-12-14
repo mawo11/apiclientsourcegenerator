@@ -1,0 +1,22 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace {{ns}};
+
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+public sealed class ApiClientGeneratorAttribute : Attribute
+{
+}
+
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+public class GetAttribute(string path)  : Attribute
+{
+    public string Path { get; set; } = path;
+}
+
+
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+public class ThrowsExceptionsAttribute() : Attribute
+{
+}

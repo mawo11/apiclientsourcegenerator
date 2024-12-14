@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <SaveGeneratedSources>true</SaveGeneratedSources>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ApiClient.SourceGenerator\ApiClient.SourceGenerator.csproj" OutputItemType="Analyzer" />
+  </ItemGroup>
+</Project>
