@@ -1,6 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Text;
 
 namespace ApiClient.SourceGenerator;
 
@@ -67,6 +65,7 @@ public sealed partial class ApiClientGenerator
 				sourceWriter.WriteLine("{");
 				sourceWriter.Indentation++;
 				sourceWriter.WriteLine("throw new NotImplementedException();");
+				//TODO:
 				sourceWriter.Indentation--;
 				sourceWriter.WriteLine("}");
 				sourceWriter.AppendLine();
@@ -90,51 +89,6 @@ public sealed partial class ApiClientGenerator
 			}
 
 			return returnType.Type!;
-		}
-
-		private static (string MethodBody, string InterfaceDeclaration) GenerateGetMethod(MethodDeclarationSyntax method)
-		{
-			StringBuilder methodBodyStringBuilder = new();
-			StringBuilder interfaceDeclarationStringBuilder = new();
-
-			string? baseType = null;
-			if (method.ReturnType is GenericNameSyntax genericNameSyntax)
-			{
-				baseType = string.Join(", ", genericNameSyntax.TypeArgumentList.Arguments);
-			}
-			else
-			{
-				baseType = method.ReturnType.ToString();
-			}
-
-			methodBodyStringBuilder.Append("");
-			methodBodyStringBuilder.Append(method.ReturnType);
-			methodBodyStringBuilder.Append(" ");
-			methodBodyStringBuilder.Append(method.Identifier);
-			methodBodyStringBuilder.Append("(");
-
-			interfaceDeclarationStringBuilder.Append(method.ReturnType);
-			interfaceDeclarationStringBuilder.Append(" ");
-			interfaceDeclarationStringBuilder.Append(method.Identifier);
-			interfaceDeclarationStringBuilder.Append("(");
-			List<string> parameterList = [];
-			foreach (var parameter in method.ParameterList.Parameters)
-			{
-				string parameterText = $"{parameter.Type} {parameter.Identifier.Text}";
-				parameterList.Add(parameterText);
-			}
-
-			methodBodyStringBuilder.Append(string.Join(", ", parameterList));
-			methodBodyStringBuilder.AppendLine(")");
-
-			interfaceDeclarationStringBuilder.Append(string.Join(", ", parameterList));
-			interfaceDeclarationStringBuilder.AppendLine(");");
-			methodBodyStringBuilder.AppendLine("{");
-
-			methodBodyStringBuilder.AppendLine($"return /*{baseType}*/ \"\";");
-			methodBodyStringBuilder.AppendLine("}");
-
-			return (methodBodyStringBuilder.ToString(), interfaceDeclarationStringBuilder.ToString());
 		}
 	}
 }
