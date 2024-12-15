@@ -58,8 +58,7 @@ public sealed partial class ApiClientGenerator
 				methodInfo.Name = method.Identifier.Text;
 				methodInfo.Parameters = GatheringParameters(method.ParameterList.Parameters);
 				methodInfo.ReturnType = GatheringReturnTypeInfo(method.ReturnType);
-				//TOOD: exception handling 
-				//TODO: logging 
+				methodInfo.ThrowExceptions = HasAttribute(method.AttributeLists, "ThrowsExceptions");
 				//TOOD: fallback return type
 				methods.Add(methodInfo);
 			}
@@ -123,42 +122,32 @@ public sealed partial class ApiClientGenerator
 
 		private static MethodInfo? CheckForApiMethod(MethodDeclarationSyntax methodDeclaration)
 		{
-			(string Name, HttpMethod HttpMethod)[] methods = [
-				("Get", HttpMethod.Get),
-				("Post", HttpMethod.Post),
-				("Put", HttpMethod.Put),
-				("Delete", HttpMethod.Delete)
-				];
+			SeparatedSyntaxList<AttributeSyntax>? attributes = methodDeclaration.AttributeLists.FirstOrDefault()?.Attributes;
 
-			foreach (var method in methods)
+			if (attributes == null)
 			{
-				if (GetAttribute(methodDeclaration.AttributeLists.FirstOrDefault()?.Attributes ?? [], method.Name, method.HttpMethod, out MethodInfo? methodInfo))
+				return null;
+			}
+
+			string[] httpMethods = ["Get", "Post", "Put", "Delete"];
+
+			foreach (var method in httpMethods)
+			{
+				var attribute = attributes.Value.FirstOrDefault(x => x.Name.ToString().StartsWith(method, StringComparison.InvariantCultureIgnoreCase));
+
+				if (attribute == null)
 				{
-					return methodInfo;
+					continue;
 				}
+
+				return new MethodInfo
+				{
+					HttpMethod = method,
+					Path = ExtractPath(attribute.ArgumentList?.Arguments ?? [])
+				};
 			}
 
 			return null;
-		}
-
-		private static bool GetAttribute(SeparatedSyntaxList<AttributeSyntax> attributes, string attributeName, HttpMethod httpMethod, out MethodInfo? methodInfo)
-		{
-			foreach (var attribute in attributes)
-			{
-				if (attribute.Name.ToString().StartsWith(attributeName))
-				{
-					methodInfo = new MethodInfo
-					{
-						HttpMethod = httpMethod,
-						Path = ExtractPath(attribute.ArgumentList?.Arguments ?? [])
-					};
-
-					return true;
-				}
-			}
-
-			methodInfo = null;
-			return false;
 
 			static string? ExtractPath(SeparatedSyntaxList<AttributeArgumentSyntax> arguments)
 			{
@@ -170,6 +159,7 @@ public sealed partial class ApiClientGenerator
 				return (arguments[0].Expression as LiteralExpressionSyntax)?.Token.ValueText;
 			}
 		}
+
 	}
 }
 

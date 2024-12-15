@@ -11,14 +11,10 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-	app.UseSwagger();
-	app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseAuthorization();
-
 var summaries = new[]
 {
 				"Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -43,5 +39,6 @@ app.MapGet("/", () => TypedResults.Text("Hello World!"));
 
 app.MapGet("/ping", () => TypedResults.Ok());
 app.MapGet("/ping-bad", () => TypedResults.BadRequest());
+app.MapSwagger();
 
 app.Run();

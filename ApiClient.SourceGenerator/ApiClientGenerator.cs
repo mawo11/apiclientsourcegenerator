@@ -77,12 +77,12 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 		internal MethodInfo[]? Methods { get; set; }
 
-		internal string[] Usings { get; set; }
+		internal string[]? Usings { get; set; }
 	}
 
 	internal sealed class MethodInfo
 	{
-		public HttpMethod? HttpMethod { get; set; }
+		public string? HttpMethod { get; set; }
 
 		public string? Path { get; set; }
 
@@ -90,19 +90,18 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 		public ReturnType? ReturnType { get; set; }
 
-		public bool IsGenericReturnType { get; set; }
-
-		public Type? GenrecReturnType { get; set; }
-
 		public string? Name { get; set; }
+
+		public bool ThrowExceptions { get; set; }
 	}
 
 	internal enum ParameterType
 	{
+		None,
 		Query,
 		Route,
 		Body,
-		Form
+		Form,
 	}
 
 	internal sealed class MethodParameter

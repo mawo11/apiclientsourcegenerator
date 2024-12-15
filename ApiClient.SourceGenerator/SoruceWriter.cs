@@ -62,6 +62,18 @@ namespace ApiClient.SourceGenerator
 
 		public void AppendLine() => _sb.AppendLine();
 
+		public void BeginBlock()
+		{
+			WriteLine("{");
+			Indentation++;
+		}
+
+		public void EndBlock()
+		{
+			Indentation--;
+			WriteLine("}");
+		}
+
 		private void AddIndentation() => _sb.Append(IndentationChar, CharsPerIndentation * _indentation);
 
 		private static string GetNextLine(ref ReadOnlySpan<char> remainingText, out bool isFinalLine)
