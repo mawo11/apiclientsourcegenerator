@@ -9,7 +9,7 @@ public sealed partial class ApiClientGenerator
 
 		internal static void EmitSource(SourceProductionContext ctx, ApiClientClassInfo apiClientClassInfo, ProjectSettings projectSettings)
 		{
-			SoruceWriter sourceWriter = new();
+			SourceWriter sourceWriter = new();
 			foreach (var @using in apiClientClassInfo.Usings!)
 			{
 				sourceWriter.WriteLine($@"using {@using};");
@@ -37,7 +37,7 @@ public sealed partial class ApiClientGenerator
 			ctx.AddSource(hintName, sourceWriter.ToSourceText());
 		}
 
-		private static void WriterInterfaceMethods(SoruceWriter sourceWriter, MethodInfo[]? methods)
+		private static void WriterInterfaceMethods(SourceWriter sourceWriter, MethodInfo[]? methods)
 		{
 			foreach (var method in methods!)
 			{
@@ -54,7 +54,7 @@ public sealed partial class ApiClientGenerator
 			}
 		}
 
-		private static void WriterMethodsBody(SoruceWriter sourceWriter, MethodInfo[]? methods)
+		private static void WriterMethodsBody(SourceWriter sourceWriter, MethodInfo[]? methods)
 		{
 			foreach (var method in methods!)
 			{
@@ -96,7 +96,7 @@ public sealed partial class ApiClientGenerator
 				{
 					sourceWriter.AppendLine();
 					//TODO: fallback
-					sourceWriter.WriteLine("return default;");
+					sourceWriter.WriteLine($"return {DefaultReturnType(method)};");
 				}
 
 				sourceWriter.EndBlock();
@@ -113,7 +113,7 @@ public sealed partial class ApiClientGenerator
 			}
 		}
 
-		private static void GenerateSourceCodeForCheckResponse(SoruceWriter sourceWriter, MethodInfo method)
+		private static void GenerateSourceCodeForCheckResponse(SourceWriter sourceWriter, MethodInfo method)
 		{
 			if (method.ThrowExceptions || !method.ReturnType!.IsGenericReturnType)
 			{
@@ -123,12 +123,12 @@ public sealed partial class ApiClientGenerator
 			{
 				sourceWriter.WriteLine("if (!response.IsSuccessStatusCode)");
 				sourceWriter.BeginBlock();
-				sourceWriter.WriteLine(method.ReturnType!.IsGenericReturnType ? "return default;" : "return;");
+				sourceWriter.WriteLine(method.ReturnType!.IsGenericReturnType ? $"return {DefaultReturnType(method)};" : "return;");
 				sourceWriter.EndBlock();
 			}
 		}
 
-		private static void GenerateSourceCodeForResponse(SoruceWriter sourceWriter, MethodInfo method)
+		private static void GenerateSourceCodeForResponse(SourceWriter sourceWriter, MethodInfo method)
 		{
 			if (!method.ReturnType!.IsGenericReturnType)
 			{
@@ -174,6 +174,22 @@ public sealed partial class ApiClientGenerator
 			}
 
 			return returnType.Type!;
+		}
+
+		private static string DefaultReturnType(MethodInfo method)
+		{
+			if (!method.ReturnType!.IsGenericReturnType)
+			{
+				return "default";
+			}
+
+			return method.ReturnType!.GenericReturnType!.ToLowerInvariant() switch
+			{
+				"bool" => "false",
+				"string" => "null",
+				"byte[]" => "Array.Empty<byte>()",
+				_ => method.ReturnType.IsArray ? $"Array.Empty<{method.ReturnType.ArrayItemType}>()" : "default",
+			};
 		}
 	}
 }

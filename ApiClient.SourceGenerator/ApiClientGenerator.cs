@@ -120,6 +120,10 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		public bool IsGenericReturnType { get; set; }
 
 		public string? GenericReturnType { get; set; }
+
+		public bool IsArray { get; set; }
+
+		public string? ArrayItemType { get; set; }
 	}
 }
 

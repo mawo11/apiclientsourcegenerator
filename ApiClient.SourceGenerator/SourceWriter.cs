@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ApiClient.SourceGenerator
 {
-	internal sealed class SoruceWriter
+	internal sealed class SourceWriter
 	{
 		private const char IndentationChar = ' ';
 		private const int CharsPerIndentation = 4;

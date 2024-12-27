@@ -94,6 +94,8 @@ public sealed partial class ApiClientGenerator
 				{
 					IsGenericReturnType = true,
 					Type = ((GenericNameSyntax)returnType).Identifier.ValueText,
+					IsArray = ((GenericNameSyntax)returnType).TypeArgumentList.Arguments[0] is ArrayTypeSyntax,
+					ArrayItemType = ((GenericNameSyntax)returnType).TypeArgumentList.Arguments[0] is ArrayTypeSyntax arrayTypeSyntax ? arrayTypeSyntax.ElementType.ToString() : null,
 					GenericReturnType = ((GenericNameSyntax)returnType).TypeArgumentList.Arguments[0].ToString()
 				},
 				IdentifierNameSyntax => new ReturnType
