@@ -20,6 +20,9 @@ public sealed partial class ApiClientGenerator
 				Namespace = GetNamespace(classDeclaration),
 				ClassName = classDeclaration.Identifier.Text,
 				Methods = GatheringMethods(classDeclaration.Members.OfType<MethodDeclarationSyntax>()),
+				//TODO: .net core compilation
+				//TODO: global method time excetion warming
+				//TODO: usesystem.text.json
 			};
 		}
 
@@ -59,7 +62,7 @@ public sealed partial class ApiClientGenerator
 				methodInfo.Parameters = GatheringParameters(method.ParameterList.Parameters);
 				methodInfo.ReturnType = GatheringReturnTypeInfo(method.ReturnType);
 				methodInfo.ThrowExceptions = HasAttribute(method.AttributeLists, "ThrowsExceptions");
-				//TOOD: fallback return type
+				//TOOD: fallback return type				
 				methods.Add(methodInfo);
 			}
 
@@ -91,7 +94,7 @@ public sealed partial class ApiClientGenerator
 				{
 					IsGenericReturnType = true,
 					Type = ((GenericNameSyntax)returnType).Identifier.ValueText,
-					GenrecReturnType = ((GenericNameSyntax)returnType).TypeArgumentList.Arguments[0].ToString()
+					GenericReturnType = ((GenericNameSyntax)returnType).TypeArgumentList.Arguments[0].ToString()
 				},
 				IdentifierNameSyntax => new ReturnType
 				{

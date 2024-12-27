@@ -36,10 +36,9 @@ public partial class SampleApiClient
 	[ThrowsExceptions]
 	public partial Task<bool> PingBad2Async();
 
-
 	private partial void LogError(string path, Exception e)
 	{
-
+		Console.WriteLine($"{path}: {e}");
 	}
 }
 

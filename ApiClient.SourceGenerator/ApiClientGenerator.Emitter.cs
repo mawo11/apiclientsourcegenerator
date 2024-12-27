@@ -70,51 +70,15 @@ public sealed partial class ApiClientGenerator
 				//TODO: content form
 				//TODO: content body 
 				var cancellationParameter = method.Parameters!.FirstOrDefault(x => x.Type!.EndsWith("CancellationToken"));
+
 				sourceWriter.WriteLine(cancellationParameter is not null ?
 					$"using (var response = await _httpClient.SendAsync(request, {cancellationParameter.Name}))" :
 					 "using (var response = await _httpClient.SendAsync(request))");
 
 				sourceWriter.BeginBlock();
-				if (method.ThrowExceptions || !method.ReturnType!.IsGenericReturnType)
-				{
-					sourceWriter.WriteLine("response.EnsureSuccessStatusCode();");
-				}
-				else
-				{
-					sourceWriter.WriteLine("if (!response.IsSuccessStatusCode)");
-					sourceWriter.BeginBlock();
-					sourceWriter.WriteLine(method.ReturnType!.IsGenericReturnType ? "return default;" : "return;");
-					sourceWriter.EndBlock();
-				}
 
-
-				if (method.ReturnType!.IsGenericReturnType)
-				{
-					switch (method.ReturnType!.GenrecReturnType!.ToLowerInvariant())
-					{
-						case "bool":
-							sourceWriter.WriteLine("return true;");
-							break;
-						case "string":
-							sourceWriter.WriteLine("return await response.Content.ReadAsStringAsync();");
-							break;
-						default:
-							sourceWriter.WriteLine("if (response is not null)");
-							sourceWriter.BeginBlock();
-							//if (cancellationParameter is not null)
-							//{
-							//	sourceWriter.WriteLine($"var content = await response.Content.ReadAsStringAsync({cancellationParameter.Name});");
-							//}
-							//else
-							//{
-							sourceWriter.WriteLine("var content = await response.Content.ReadAsStringAsync();");
-
-							//}
-							//TODO: seralizacja
-							sourceWriter.EndBlock();
-							break;
-					}
-				}
+				GenerateSourceCodeForCheckResponse(sourceWriter, method);
+				GenerateSourceCodeForResponse(sourceWriter, method);
 
 				sourceWriter.EndBlock();
 				sourceWriter.EndBlock();
@@ -126,6 +90,7 @@ public sealed partial class ApiClientGenerator
 				{
 					sourceWriter.WriteLine("throw;");
 				}
+
 				sourceWriter.EndBlock();
 				if (method.ReturnType!.IsGenericReturnType)
 				{
@@ -148,11 +113,64 @@ public sealed partial class ApiClientGenerator
 			}
 		}
 
+		private static void GenerateSourceCodeForCheckResponse(SoruceWriter sourceWriter, MethodInfo method)
+		{
+			if (method.ThrowExceptions || !method.ReturnType!.IsGenericReturnType)
+			{
+				sourceWriter.WriteLine("response.EnsureSuccessStatusCode();");
+			}
+			else
+			{
+				sourceWriter.WriteLine("if (!response.IsSuccessStatusCode)");
+				sourceWriter.BeginBlock();
+				sourceWriter.WriteLine(method.ReturnType!.IsGenericReturnType ? "return default;" : "return;");
+				sourceWriter.EndBlock();
+			}
+		}
+
+		private static void GenerateSourceCodeForResponse(SoruceWriter sourceWriter, MethodInfo method)
+		{
+			if (!method.ReturnType!.IsGenericReturnType)
+			{
+				return;
+			}
+
+			switch (method.ReturnType!.GenericReturnType!.ToLowerInvariant())
+			{
+				case "bool":
+					sourceWriter.WriteLine("return true;");
+					break;
+				case "string":
+					sourceWriter.WriteLine("return await response.Content.ReadAsStringAsync();");
+					break;
+				case "byte[]":
+					sourceWriter.WriteLine("return await response.Content.ReadAsByteArrayAsync();");
+					break;
+				default:
+					sourceWriter.WriteLine("if(response.StatusCode == System.Net.HttpStatusCode.OK)");
+					sourceWriter.BeginBlock();
+					sourceWriter.WriteLine("if (response.Content is not null)");
+					sourceWriter.BeginBlock();
+					sourceWriter.WriteLine("var content = await response.Content.ReadAsStringAsync();");
+					// jesli application/json - json newtonsoft/system.text.json
+
+					sourceWriter.WriteLine("if(!string.IsNullOrEmpty(content))");
+					sourceWriter.BeginBlock();
+					//sourceWriter.WriteLine($"return System.Text.Json.JsonSerializer.Deserialize<{method.ReturnType.GenericReturnType}>(content);");
+					sourceWriter.WriteLine($"return Newtonsoft.Json.JsonConvert.DeserializeObject<{method.ReturnType.GenericReturnType}>(content);");
+					sourceWriter.EndBlock();
+
+					sourceWriter.EndBlock();
+					sourceWriter.EndBlock();
+					break;
+			}
+		}
+
 		private static string FormatReturnType(ReturnType returnType)
 		{
 			if (returnType.IsGenericReturnType)
 			{
-				return $"{returnType.Type}<{returnType.GenrecReturnType}>";
+				return $"{returnType.Type}<{returnType.GenericReturnType}>";
 			}
 
 			return returnType.Type!;

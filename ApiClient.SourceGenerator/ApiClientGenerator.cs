@@ -119,7 +119,7 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 		public bool IsGenericReturnType { get; set; }
 
-		public string? GenrecReturnType { get; set; }
+		public string? GenericReturnType { get; set; }
 	}
 }
 
