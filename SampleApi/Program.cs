@@ -10,7 +10,6 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -22,22 +21,23 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", (HttpContext httpContext) =>
 {
-	var forecast = Enumerable.Range(1, 5).Select(index =>
-		new WeatherForecast
-		{
-			Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-			TemperatureC = Random.Shared.Next(-20, 55),
-			Summary = summaries[Random.Shared.Next(summaries.Length)]
-		})
+	var forecast = Enumerable.Range(1, 5)
+		.Select(index =>
+			new WeatherForecast
+			{
+				Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+				TemperatureC = Random.Shared.Next(-20, 55),
+				Summary = summaries[Random.Shared.Next(summaries.Length)]
+			})
 		.ToArray();
 	return forecast;
 })
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 
-app.MapGet("/", () => TypedResults.Text("Hello World!"));
+app.MapGet("/", () => TypedResults.Text("Hello World from api!"));
 
-app.MapGet("/ping", () => TypedResults.Ok());
+app.MapGet("/ping", () => TypedResults.NoContent());
 app.MapGet("/ping-bad", () => TypedResults.BadRequest());
 app.MapSwagger();
 

@@ -7,27 +7,23 @@ public partial class SampleApiClient
 {
 	public SampleApiClient(HttpClient httpClient)
 	{
-		//_httpClient = httpClient;
+		_httpClient = httpClient;
 	}
 
 	[Get("/")]
 	public partial Task<string> GetHelloAsync();
 
-
-	[Get("/ping")]
-	public partial Task PingAsync(System.Threading.CancellationToken cancellationToken);
-
 	[Get("/weatherforecast")]
 	public partial Task<WeatherForecast[]> GetWeatherForecastsAsync();
 
-
 	[Get("/hello")]
-	public partial Task HelloAsync(int param1, string param2, int[] params3);
-
+	public partial Task NotExistingActionAsync();
 
 	[Get("/ping")]
-	public partial Task<bool> Ping2Async();
+	public partial Task<bool> PingAsync();
 
+	[Get("/ping")]
+	public partial Task PingAsync(System.Threading.CancellationToken cancellationToken);
 
 	[Get("/ping-bad")]
 	public partial Task<bool> PingBadAsync();
