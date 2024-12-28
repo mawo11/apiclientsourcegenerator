@@ -2,7 +2,7 @@
 
 namespace SampleApi.Client;
 
-[ApiClientGenerator]
+[ApiClientGenerator(NetCore = true, Serialization = Serialization.SystemTextJson, UseILogger = true, ConnectionTooLongWarnInMs = 200)]
 public partial class SampleApiClient
 {
 	public SampleApiClient(HttpClient httpClient)
@@ -10,6 +10,7 @@ public partial class SampleApiClient
 		_httpClient = httpClient;
 	}
 
+	[Serialization(Serialization.Newtonsoft)]
 	[Get("/")]
 	public partial Task<string> GetHelloAsync();
 

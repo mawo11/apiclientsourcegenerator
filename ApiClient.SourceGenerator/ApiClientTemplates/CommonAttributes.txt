@@ -4,23 +4,93 @@ using System.Text;
 
 namespace {{ns}}
 {
+    public enum Serialization 
+    {
+        Newtonsoft,
+        SystemTextJson,
+        Custom
+    }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class ApiClientGeneratorAttribute : Attribute
     {
+        public bool NetCore { get; set; } = false;
+        
+        public Serialization Serialization { get; set; } = Serialization.Newtonsoft;
+
+        public bool UseILogger { get; set; } = false;
+
+        public int ConnectionTooLongWarnInMs { get; set; } = 100;
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public class GetAttribute(string path)  : Attribute
+    public class GetAttribute  : Attribute
     {
-        public string Path { get; set; } = path;
+        public GetAttribute(string path)
+        {
+           Path = path;
+        }
+
+        public string Path { get; set; }  
     }
 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class PostAttribute  : Attribute
+    {
+        public PostAttribute(string path)
+        {
+           Path = path;
+        }
+        public string Path { get; set; }
+    }
+
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class PutAttribute  : Attribute
+    {
+        public PutAttribute(string path)
+        {
+           Path = path;
+        }
+
+        public string Path { get; set; }
+    }
+
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class DeleteAttribute  : Attribute
+    {
+        public DeleteAttribute(string path)
+        {
+           Path = path;
+        }
+
+        public string Path { get; set; } 
+    }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class ThrowsExceptionsAttribute() : Attribute
     {
     }
 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+	public class SerializationAttribute : Attribute
+	{
+		public SerializationAttribute(Serialization serialization)
+		{
+			Serialization = serialization;
 
+		}
+
+		public Serialization Serialization { get; set; } = Serialization.Newtonsoft;
+	}
+
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+	public class ConnectionTooLongWarnInMsAttribute : Attribute
+	{
+		public ConnectionTooLongWarnInMsAttribute(int connectionTooLongWarnInMs)
+		{
+			ConnectionTooLongWarnInMs = connectionTooLongWarnInMs;
+		}
+
+		public int ConnectionTooLongWarnInMs { get; set; } = 0;
+	}
 }

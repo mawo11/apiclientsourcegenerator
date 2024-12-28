@@ -8,7 +8,6 @@ ISampleApiClient apiClient = new SampleApiClient(new HttpClient()
 });
 
 
-
 var result = await apiClient.GetHelloAsync();
 Console.WriteLine($"Hello test: {result}");
 Console.WriteLine();
@@ -44,9 +43,11 @@ foreach (var forecast in getWeatherForecastsResult)
 
 
 Console.WriteLine("Query, route, header parameter test");
-//
+
 Console.WriteLine("Aplication json test");
-//
+
 Console.WriteLine("form field test");
 
 Console.WriteLine("byte array test");
+
+Console.WriteLine("conection too long warn");

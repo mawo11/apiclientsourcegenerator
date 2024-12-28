@@ -14,16 +14,57 @@ public sealed partial class ApiClientGenerator
 				return null;
 			}
 
-			return new ApiClientClassInfo()
+			var apiClientClassInfo = new ApiClientClassInfo()
 			{
 				Usings = GatheringUsing(classDeclaration),
 				Namespace = GetNamespace(classDeclaration),
 				ClassName = classDeclaration.Identifier.Text,
 				Methods = GatheringMethods(classDeclaration.Members.OfType<MethodDeclarationSyntax>()),
-				//TODO: .net core compilation
-				//TODO: global method time excetion warming
-				//TODO: usesystem.text.json
 			};
+
+			var arguments = classDeclaration.AttributeLists[0].Attributes[0].ArgumentList!.Arguments;
+			foreach (var argument in arguments)
+			{
+				if (argument.NameEquals is null)
+				{
+					continue;
+				}
+
+				switch (argument.NameEquals.Name.ToString())
+				{
+					case "NetCore":
+						if (argument.Expression is LiteralExpressionSyntax netCore && netCore.Token.Value is not null)
+						{
+							apiClientClassInfo.NetCore = (bool)netCore.Token.Value;
+						}
+
+						break;
+					case "Serialization":
+						apiClientClassInfo.Serialization = (argument.Expression as MemberAccessExpressionSyntax)!.Name.ToString() switch
+						{
+							"Newtonsoft" => SerializationMode.Newtonsoft,
+							"SystemTextJson" => SerializationMode.SystemTextJson,
+							"Custom" => SerializationMode.Custom,
+							_ => SerializationMode.Newtonsoft
+						};
+
+						break;
+					case "UseILogger":
+						if (argument.Expression is LiteralExpressionSyntax useILogger && useILogger.Token.Value is not null)
+						{
+							apiClientClassInfo.UseILogger = (bool)useILogger.Token.Value;
+						}
+						break;
+					case "ConnectionTooLongWarnInMs":
+						if (argument.Expression is LiteralExpressionSyntax connectionTooLongWarnInMs && connectionTooLongWarnInMs.Token.Value is not null)
+						{
+							apiClientClassInfo.ConnectionTooLongWarnInMs = (int)connectionTooLongWarnInMs.Token.Value;
+						}
+						break;
+				}
+			}
+
+			return apiClientClassInfo;
 		}
 
 		private static string[] GatheringUsing(ClassDeclarationSyntax classDeclaration)
@@ -62,7 +103,19 @@ public sealed partial class ApiClientGenerator
 				methodInfo.Parameters = GatheringParameters(method.ParameterList.Parameters);
 				methodInfo.ReturnType = GatheringReturnTypeInfo(method.ReturnType);
 				methodInfo.ThrowExceptions = HasAttribute(method.AttributeLists, "ThrowsExceptions");
-				//TOOD: fallback return type				
+
+				var attribute = GetAttribute("Serialization", method.AttributeLists);
+				if (attribute is not null)
+				{
+					methodInfo.Serialization = (attribute.ArgumentList!.Arguments[0].Expression as MemberAccessExpressionSyntax)!.Name.ToString() switch
+					{
+						"Newtonsoft" => SerializationMode.Newtonsoft,
+						"SystemTextJson" => SerializationMode.SystemTextJson,
+						"Custom" => SerializationMode.Custom,
+						_ => SerializationMode.Inherit
+					};
+				}
+
 				methods.Add(methodInfo);
 			}
 
@@ -127,18 +180,11 @@ public sealed partial class ApiClientGenerator
 
 		private static MethodInfo? CheckForApiMethod(MethodDeclarationSyntax methodDeclaration)
 		{
-			SeparatedSyntaxList<AttributeSyntax>? attributes = methodDeclaration.AttributeLists.FirstOrDefault()?.Attributes;
-
-			if (attributes == null)
-			{
-				return null;
-			}
-
 			string[] httpMethods = ["Get", "Post", "Put", "Delete"];
 
 			foreach (var method in httpMethods)
 			{
-				var attribute = attributes.Value.FirstOrDefault(x => x.Name.ToString().StartsWith(method, StringComparison.InvariantCultureIgnoreCase));
+				var attribute = GetAttribute(method, methodDeclaration.AttributeLists);
 
 				if (attribute == null)
 				{
@@ -163,6 +209,22 @@ public sealed partial class ApiClientGenerator
 
 				return (arguments[0].Expression as LiteralExpressionSyntax)?.Token.ValueText;
 			}
+		}
+
+		private static AttributeSyntax? GetAttribute(string name, SyntaxList<AttributeListSyntax> attributeLists)
+		{
+			foreach (var attributeList in attributeLists)
+			{
+				foreach (var attribute in attributeList.Attributes)
+				{
+					if (attribute.Name.ToString().StartsWith(name, StringComparison.InvariantCultureIgnoreCase))
+					{
+						return attribute;
+					}
+				}
+			}
+
+			return null;
 		}
 
 	}

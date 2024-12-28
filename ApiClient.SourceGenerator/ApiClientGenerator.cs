@@ -40,7 +40,6 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 		context.RegisterSourceOutput(apiClientClassDeclarations.Combine(options), static (SourceProductionContext ctx, (ApiClientClassInfo ApiClientClassInfo, ProjectSettings ProjectSettings) data) =>
 		{
-			//TODO: emiter per core/framework??
 			Emitter.EmitSource(ctx, data.ApiClientClassInfo, data.ProjectSettings);
 		});
 
@@ -52,7 +51,7 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		{
 			foreach (var attribute in attributeList.Attributes)
 			{
-				if (attribute.Name.ToString().EndsWith(attrName))
+				if (attribute.Name.ToString().StartsWith(attrName))
 				{
 					return true;
 				}
@@ -69,6 +68,14 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		//internal bool IsNetCore { get; set; }
 	}
 
+	internal enum SerializationMode
+	{
+		Inherit,
+		Newtonsoft,
+		SystemTextJson,
+		Custom
+	}
+
 	internal sealed class ApiClientClassInfo
 	{
 		internal string? Namespace { get; set; }
@@ -78,6 +85,14 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		internal MethodInfo[]? Methods { get; set; }
 
 		internal string[]? Usings { get; set; }
+
+		internal bool NetCore { get; set; } = false;
+
+		internal SerializationMode Serialization { get; set; } = SerializationMode.Newtonsoft;
+
+		internal bool UseILogger { get; set; } = false;
+
+		internal int ConnectionTooLongWarnInMs { get; set; } = 0;
 	}
 
 	internal sealed class MethodInfo
@@ -93,6 +108,8 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		public string? Name { get; set; }
 
 		public bool ThrowExceptions { get; set; }
+
+		internal SerializationMode Serialization { get; set; } = SerializationMode.Inherit;
 	}
 
 	internal enum ParameterType
