@@ -119,6 +119,7 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		Route,
 		Body,
 		Form,
+		Header,
 	}
 
 	internal sealed class MethodParameter
@@ -128,6 +129,12 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		public string? Type { get; set; }
 
 		public ParameterType ParameterType { get; set; }
+
+		public string? AliasAs { get; set; }
+
+		public string? Fmt { get; set; }
+
+		public string? Header { get; set; }
 	}
 
 	internal sealed class ReturnType

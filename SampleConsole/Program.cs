@@ -31,20 +31,23 @@ catch (Exception ex)
 {
 	Console.WriteLine($"Error: {ex.Message}");
 }
+Console.WriteLine();
 
 var pingBadAsyncResult = await apiClient.PingBadAsync();
 Console.WriteLine($"Bad ping result: {pingBadAsyncResult}");
+Console.WriteLine();
 
+Console.WriteLine("Aplication json test");
 var getWeatherForecastsResult = await apiClient.GetWeatherForecastsAsync();
 foreach (var forecast in getWeatherForecastsResult)
 {
 	Console.WriteLine($"Date: {forecast.Date}, Temperature: {forecast.TemperatureC}, Summary: {forecast.Summary}");
 }
-
+Console.WriteLine();
 
 Console.WriteLine("Query, route, header parameter test");
-
-Console.WriteLine("Aplication json test");
+var getItemResult = await apiClient.GetItemAsync(1, "val22", "xxxa2", 3434, DateTime.Now, "header test", 2);
+Console.WriteLine(getItemResult);
 
 Console.WriteLine("form field test");
 

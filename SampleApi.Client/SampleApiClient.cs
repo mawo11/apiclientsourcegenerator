@@ -2,13 +2,16 @@
 
 namespace SampleApi.Client;
 
-[ApiClientGenerator(NetCore = true, Serialization = Serialization.SystemTextJson, UseILogger = true, ConnectionTooLongWarnInMs = 200)]
+[ApiClientGenerator()]
 public partial class SampleApiClient
 {
 	public SampleApiClient(HttpClient httpClient)
 	{
 		_httpClient = httpClient;
 	}
+
+	[Post("/parameters-test/{id}/test/{val}")]
+	public partial Task<string> GetItemAsync(int id, string val, string val2, [AliasAs("mode")] int val4, [Fmt("yyyy-MM")] DateTime from, [Header("X-TEST: val")] string headerValue, [Header("X-ID:")] int headerId);
 
 	[Serialization(Serialization.Newtonsoft)]
 	[Get("/")]

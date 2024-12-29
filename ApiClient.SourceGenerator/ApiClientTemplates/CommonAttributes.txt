@@ -93,4 +93,43 @@ namespace {{ns}}
 
 		public int ConnectionTooLongWarnInMs { get; set; } = 0;
 	}
+
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+	public class AliasAsAttribute : Attribute
+	{
+		public AliasAsAttribute(string alias)
+		{
+			Alias = alias;
+		}
+
+		public string Alias { get; set; }
+	}
+
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+	public class BodyAttribute : Attribute
+	{
+		public bool Form  { get; set; } = false;
+	}
+
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+	public class FmtAttribute : Attribute
+	{
+        public FmtAttribute(string fmt)
+        {
+            Fmt = fmt;
+        }
+
+		public string Fmt  { get; set; } 
+	}
+
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+	public class HeaderAttribute : Attribute
+	{
+        public HeaderAttribute(string header)
+        {
+            Header = header;
+        }
+
+		public string Header { get; set; } 
+	}
 }

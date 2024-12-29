@@ -100,7 +100,7 @@ public sealed partial class ApiClientGenerator
 				}
 
 				methodInfo.Name = method.Identifier.Text;
-				methodInfo.Parameters = GatheringParameters(method.ParameterList.Parameters);
+				methodInfo.Parameters = GatheringParameters(method.ParameterList.Parameters, methodInfo.Path!);
 				methodInfo.ReturnType = GatheringReturnTypeInfo(method.ReturnType);
 				methodInfo.ThrowExceptions = HasAttribute(method.AttributeLists, "ThrowsExceptions");
 
@@ -122,18 +122,60 @@ public sealed partial class ApiClientGenerator
 			return [.. methods];
 		}
 
-		private static MethodParameter[]? GatheringParameters(SeparatedSyntaxList<ParameterSyntax> parameters)
+		private static MethodParameter[]? GatheringParameters(SeparatedSyntaxList<ParameterSyntax> parameters, string path)
 		{
 			List<MethodParameter> parameterList = [];
+
 			foreach (var parameter in parameters)
 			{
-				MethodParameter method = new()
+				MethodParameter methodParameter = new()
 				{
 					Name = parameter.Identifier.Text,
-					Type = parameter.Type!.ToString()
+					Type = parameter.Type!.ToString(),
 				};
 
-				parameterList.Add(method);
+				parameterList.Add(methodParameter);
+
+				var asliasAsAttribute = GetAttribute("AliasAs", parameter.AttributeLists);
+				if (asliasAsAttribute is not null && asliasAsAttribute.ArgumentList!.Arguments[0].Expression is LiteralExpressionSyntax literalExpression)
+				{
+					methodParameter.AliasAs = literalExpression.Token.Value as string;
+				}
+
+				var fmtAttribute = GetAttribute("Fmt", parameter.AttributeLists);
+				if (fmtAttribute is not null && fmtAttribute.ArgumentList!.Arguments[0].Expression is LiteralExpressionSyntax fmtLiteralExpression)
+				{
+					methodParameter.Fmt = fmtLiteralExpression.Token.Value as string;
+				}
+
+				if (path.IndexOf($"{{{methodParameter.Name}}}") > -1)
+				{
+					methodParameter.ParameterType = ParameterType.Route;
+					continue;
+				}
+
+				var bodyAttribute = GetAttribute("Body", parameter.AttributeLists);
+				if (bodyAttribute is not null)
+				{
+					bool formElemenet = bodyAttribute.ArgumentList is not null && bodyAttribute.ArgumentList!.Arguments[0].Expression is LiteralExpressionSyntax netCore && netCore.Token.Value is not null && (bool)netCore.Token.Value;
+
+					methodParameter.ParameterType = formElemenet ? ParameterType.Form : ParameterType.Body;
+					continue;
+				}
+
+				var headerAttribute = GetAttribute("Header", parameter.AttributeLists);
+				if (headerAttribute is not null && headerAttribute.ArgumentList!.Arguments[0].Expression is LiteralExpressionSyntax headerLiteralExpression)
+				{
+					methodParameter.Header = headerLiteralExpression.Token.Value as string;
+					methodParameter.ParameterType = ParameterType.Header;
+					continue;
+				}
+
+				if (!methodParameter.Type.EndsWith("CancellationToken"))
+				{
+					methodParameter.ParameterType = ParameterType.Query;
+					continue;
+				}
 			}
 
 			return [.. parameterList];

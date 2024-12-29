@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.Text;
 
 namespace ApiClient.SourceGenerator;
 
@@ -60,13 +61,16 @@ public sealed partial class ApiClientGenerator
 			{
 				sourceWriter.WriteLine($"public partial async {FormatReturnType(method.ReturnType!)} {method.Name}({FormatParameters(method.Parameters)})");
 				sourceWriter.BeginBlock();
+				var url = method.Parameters!.Length > 0 ? BuildUrl(method.Path!, method.Parameters) : $"\"{method.Path}\"";
+				sourceWriter.WriteLine($"string url = {url};");
+				sourceWriter.AppendLine();
 				sourceWriter.WriteLine("try");
 				sourceWriter.BeginBlock();
 				sourceWriter.WriteLine("using (var request = new System.Net.Http.HttpRequestMessage())");
 				sourceWriter.BeginBlock();
 				sourceWriter.WriteLine($"request.Method = System.Net.Http.HttpMethod.{method.HttpMethod};");
-				sourceWriter.WriteLine($"request.RequestUri = new System.Uri(\"{method.Path}\", System.UriKind.RelativeOrAbsolute);");
-				//TOOD: headers
+				sourceWriter.WriteLine("request.RequestUri = new System.Uri(url, System.UriKind.RelativeOrAbsolute);");
+				GenerateSourceCodeForHeaders(sourceWriter, method);
 				//TODO: content form
 				//TODO: content body 
 				var cancellationParameter = method.Parameters!.FirstOrDefault(x => x.Type!.EndsWith("CancellationToken"));
@@ -85,7 +89,7 @@ public sealed partial class ApiClientGenerator
 				sourceWriter.EndBlock();
 				sourceWriter.WriteLine("catch(System.Exception e)");
 				sourceWriter.BeginBlock();
-				sourceWriter.WriteLine($"LogError(\"{method.Path}\", e);");
+				sourceWriter.WriteLine("LogError(url, e);");
 				if (method.ThrowExceptions)
 				{
 					sourceWriter.WriteLine("throw;");
@@ -95,7 +99,6 @@ public sealed partial class ApiClientGenerator
 				if (method.ReturnType!.IsGenericReturnType)
 				{
 					sourceWriter.AppendLine();
-					//TODO: fallback
 					sourceWriter.WriteLine($"return {DefaultReturnType(method)};");
 				}
 
@@ -111,6 +114,59 @@ public sealed partial class ApiClientGenerator
 
 				return string.Join(",", @params);
 			}
+		}
+
+		private static void GenerateSourceCodeForHeaders(SourceWriter sourceWriter, MethodInfo method)
+		{
+			var headerParameters = method.Parameters
+				.Where(x => x.ParameterType == ParameterType.Header)
+				.ToArray();
+
+			foreach (var headerParameter in headerParameters)
+			{
+				sourceWriter.WriteLine(string.IsNullOrEmpty(headerParameter.Fmt) ?
+					$"string[] {headerParameter.Name}_header = $\"{headerParameter.Header} {{{headerParameter.Name}}}\".Split(':');" :
+					$"string[] {headerParameter.Name}_header = $\"{headerParameter.Header} {{{headerParameter.Name}.ToString(\"{headerParameter.Fmt}\")}}\".Split(':');");
+
+				sourceWriter.WriteLine($"request.Headers.Add({headerParameter.Name}_header[0], {headerParameter.Name}_header[1]);");
+			}
+		}
+
+		private static string BuildUrl(string path, MethodParameter[] parameters)
+		{
+			List<string> paramNames = new(parameters.Length);
+			StringBuilder urlBuilder = new(path.Length);
+			urlBuilder.Append("$\"");
+			urlBuilder.Append(path);
+
+			var queryParameters = parameters.Where(x => x.ParameterType == ParameterType.Query).ToArray();
+			if (queryParameters.Length > 0)
+			{
+				urlBuilder.Append('?');
+
+				for (int i = 0; i < queryParameters.Length; i++)
+				{
+					var parameter = queryParameters[i];
+					urlBuilder.Append(string.IsNullOrEmpty(parameter.AliasAs) ? parameter.Name : parameter.AliasAs);
+					urlBuilder.Append("={");
+					urlBuilder.Append(parameter.Name);
+					if (!string.IsNullOrEmpty(parameter.Fmt))
+					{
+						urlBuilder.Append(".ToString(\"");
+						urlBuilder.Append(parameter.Fmt);
+						urlBuilder.Append("\")");
+					}
+
+					urlBuilder.Append("}");
+					if (i < queryParameters.Length - 1)
+					{
+						urlBuilder.Append('&');
+					}
+				}
+			}
+
+			urlBuilder.Append("\"");
+			return urlBuilder.ToString();
 		}
 
 		private static void GenerateSourceCodeForCheckResponse(SourceWriter sourceWriter, MethodInfo method)
