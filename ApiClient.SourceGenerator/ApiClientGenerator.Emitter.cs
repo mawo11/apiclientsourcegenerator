@@ -28,7 +28,7 @@ public sealed partial class ApiClientGenerator
 			sourceWriter.BeginBlock();
 			sourceWriter.WriteLine("private readonly HttpClient _httpClient;");
 			sourceWriter.AppendLine();
-			WriterMethodsBody(sourceWriter, apiClientClassInfo.Methods);
+			WriterMethodsBody(sourceWriter, apiClientClassInfo);
 			sourceWriter.AppendLine();
 			sourceWriter.WriteLine("private partial void LogError(string path, System.Exception ex);");
 			sourceWriter.EndBlock();
@@ -55,9 +55,9 @@ public sealed partial class ApiClientGenerator
 			}
 		}
 
-		private static void WriterMethodsBody(SourceWriter sourceWriter, MethodInfo[]? methods)
+		private static void WriterMethodsBody(SourceWriter sourceWriter, ApiClientClassInfo apiClientClassInfo)
 		{
-			foreach (var method in methods!)
+			foreach (var method in apiClientClassInfo.Methods!)
 			{
 				sourceWriter.WriteLine($"public partial async {FormatReturnType(method.ReturnType!)} {method.Name}({FormatParameters(method.Parameters)})");
 				sourceWriter.BeginBlock();
@@ -82,7 +82,7 @@ public sealed partial class ApiClientGenerator
 				sourceWriter.BeginBlock();
 
 				GenerateSourceCodeForCheckResponse(sourceWriter, method);
-				GenerateSourceCodeForResponse(sourceWriter, method);
+				GenerateSourceCodeForResponse(sourceWriter, method, apiClientClassInfo);
 
 				sourceWriter.EndBlock();
 				sourceWriter.EndBlock();
@@ -184,7 +184,7 @@ public sealed partial class ApiClientGenerator
 			}
 		}
 
-		private static void GenerateSourceCodeForResponse(SourceWriter sourceWriter, MethodInfo method)
+		private static void GenerateSourceCodeForResponse(SourceWriter sourceWriter, MethodInfo method, ApiClientClassInfo apiClientClassInfo)
 		{
 			if (!method.ReturnType!.IsGenericReturnType)
 			{
@@ -197,18 +197,17 @@ public sealed partial class ApiClientGenerator
 					sourceWriter.WriteLine("return true;");
 					break;
 				case "string":
-					sourceWriter.WriteLine("return await response.Content.ReadAsStringAsync();");
+					sourceWriter.WriteLine($"return await response.Content.ReadAsStringAsync({GetCancellationParameter(method, apiClientClassInfo.NetCore)});");
 					break;
 				case "byte[]":
-					sourceWriter.WriteLine("return await response.Content.ReadAsByteArrayAsync();");
+					sourceWriter.WriteLine($"return await response.Content.ReadAsByteArrayAsync({GetCancellationParameter(method, apiClientClassInfo.NetCore)});");
 					break;
 				default:
 					sourceWriter.WriteLine("if(response.StatusCode == System.Net.HttpStatusCode.OK)");
 					sourceWriter.BeginBlock();
 					sourceWriter.WriteLine("if (response.Content is not null)");
 					sourceWriter.BeginBlock();
-					sourceWriter.WriteLine("var content = await response.Content.ReadAsStringAsync();");
-					// jesli application/json - json newtonsoft/system.text.json
+					sourceWriter.WriteLine($"var content = await response.Content.ReadAsStringAsync({GetCancellationParameter(method, apiClientClassInfo.NetCore)});");
 
 					sourceWriter.WriteLine("if(!string.IsNullOrEmpty(content))");
 					sourceWriter.BeginBlock();
@@ -219,6 +218,20 @@ public sealed partial class ApiClientGenerator
 					sourceWriter.EndBlock();
 					sourceWriter.EndBlock();
 					break;
+			}
+
+			static string GetCancellationParameter(MethodInfo method, bool isNetCore)
+			{
+				if (isNetCore)
+				{
+					var cancellationParameter = method.Parameters!.FirstOrDefault(x => x.Type!.EndsWith("CancellationToken"));
+					if (cancellationParameter is not null)
+					{
+						return cancellationParameter.Name!;
+					}
+				}
+
+				return string.Empty;
 			}
 		}
 

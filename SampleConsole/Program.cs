@@ -48,6 +48,9 @@ Console.WriteLine();
 Console.WriteLine("Query, route, header parameter test");
 var getItemResult = await apiClient.GetItemAsync(1, "val22", "xxxa2", 3434, DateTime.Now, "header test", 2);
 Console.WriteLine(getItemResult);
+Console.WriteLine();
+
+Console.WriteLine("json upload test");
 
 Console.WriteLine("form field test");
 
