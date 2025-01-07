@@ -18,8 +18,6 @@ namespace {{ns}}
         
         public Serialization Serialization { get; set; } = Serialization.Newtonsoft;
 
-        public bool UseILogger { get; set; } = false;
-
         public int ConnectionTooLongWarnInMs { get; set; } = 100;
     }
 

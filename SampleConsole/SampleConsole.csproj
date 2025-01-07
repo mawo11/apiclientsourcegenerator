@@ -5,9 +5,18 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <SaveGeneratedSources>true</SaveGeneratedSources>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ApiClient.SourceGenerator\ApiClient.SourceGenerator.csproj" OutputItemType="Analyzer">
+      <Private>false</Private>
+    </ProjectReference>
     <ProjectReference Include="..\SampleApi.Client\SampleApi.Client.csproj" />
   </ItemGroup>
 

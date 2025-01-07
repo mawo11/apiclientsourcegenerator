@@ -7,8 +7,9 @@ public sealed partial class ApiClientGenerator
 {
 	internal sealed class Emitter
 	{
+		private static readonly DiagnosticDescriptor RuleOnlyOneBodyAllowed = new DiagnosticDescriptor("ApiClientGenerator", "", "Tylko jeden parametr Body jest dozwolony", "Error", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-		internal static void EmitSource(SourceProductionContext ctx, ApiClientClassInfo apiClientClassInfo, ProjectSettings projectSettings)
+		internal static void EmitSource(SourceProductionContext ctx, ApiClientClassInfo apiClientClassInfo)
 		{
 			SourceWriter sourceWriter = new();
 			foreach (var @using in apiClientClassInfo.Usings!)
@@ -28,9 +29,9 @@ public sealed partial class ApiClientGenerator
 			sourceWriter.BeginBlock();
 			sourceWriter.WriteLine("private readonly HttpClient _httpClient;");
 			sourceWriter.AppendLine();
-			WriterMethodsBody(sourceWriter, apiClientClassInfo);
+			WriterMethodsBody(sourceWriter, apiClientClassInfo, ctx);
 			sourceWriter.AppendLine();
-			sourceWriter.WriteLine("private partial void LogError(string path, System.Exception ex);");
+			sourceWriter.WriteLine("private partial void LogError(string methodName, string path, System.Exception ex);");
 			sourceWriter.EndBlock();
 			sourceWriter.EndBlock();
 
@@ -55,10 +56,19 @@ public sealed partial class ApiClientGenerator
 			}
 		}
 
-		private static void WriterMethodsBody(SourceWriter sourceWriter, ApiClientClassInfo apiClientClassInfo)
+		private static void WriterMethodsBody(SourceWriter sourceWriter, ApiClientClassInfo apiClientClassInfo, SourceProductionContext ctx)
 		{
 			foreach (var method in apiClientClassInfo.Methods!)
 			{
+				SerializationMode serializationMode = apiClientClassInfo.Serialization;
+				if (method.Serialization != SerializationMode.Inherit)
+				{
+					serializationMode = method.Serialization;
+				}
+
+				var classAndMethod = $"\"{apiClientClassInfo.ClassName}.{method.Name}\"";
+
+
 				sourceWriter.WriteLine($"public partial async {FormatReturnType(method.ReturnType!)} {method.Name}({FormatParameters(method.Parameters)})");
 				sourceWriter.BeginBlock();
 				var url = method.Parameters!.Length > 0 ? BuildUrl(method.Path!, method.Parameters) : $"\"{method.Path}\"";
@@ -71,8 +81,7 @@ public sealed partial class ApiClientGenerator
 				sourceWriter.WriteLine($"request.Method = System.Net.Http.HttpMethod.{method.HttpMethod};");
 				sourceWriter.WriteLine("request.RequestUri = new System.Uri(url, System.UriKind.RelativeOrAbsolute);");
 				GenerateSourceCodeForHeaders(sourceWriter, method);
-				//TODO: content form
-				//TODO: content body 
+				GenerateSourceCodeForContent(sourceWriter, method, ctx, serializationMode);
 				var cancellationParameter = method.Parameters!.FirstOrDefault(x => x.Type!.EndsWith("CancellationToken"));
 
 				sourceWriter.WriteLine(cancellationParameter is not null ?
@@ -82,21 +91,21 @@ public sealed partial class ApiClientGenerator
 				sourceWriter.BeginBlock();
 
 				GenerateSourceCodeForCheckResponse(sourceWriter, method);
-				GenerateSourceCodeForResponse(sourceWriter, method, apiClientClassInfo);
+				GenerateSourceCodeForResponse(sourceWriter, method, apiClientClassInfo, serializationMode);
 
 				sourceWriter.EndBlock();
 				sourceWriter.EndBlock();
 				sourceWriter.EndBlock();
 				sourceWriter.WriteLine("catch(System.Exception e)");
 				sourceWriter.BeginBlock();
-				sourceWriter.WriteLine("LogError(url, e);");
+				sourceWriter.WriteLine($"LogError({classAndMethod},url, e);");
 				if (method.ThrowExceptions)
 				{
 					sourceWriter.WriteLine("throw;");
 				}
 
 				sourceWriter.EndBlock();
-				if (method.ReturnType!.IsGenericReturnType)
+				if (method.ReturnType!.IsGenericReturnType && !method.ThrowExceptions)
 				{
 					sourceWriter.AppendLine();
 					sourceWriter.WriteLine($"return {DefaultReturnType(method)};");
@@ -104,6 +113,19 @@ public sealed partial class ApiClientGenerator
 
 				sourceWriter.EndBlock();
 				sourceWriter.AppendLine();
+
+				if (serializationMode == SerializationMode.Custom)
+				{
+					if (!string.IsNullOrEmpty(method.CustomDeserializationMethodDeclaration))
+					{
+						sourceWriter.WriteLine(method.CustomDeserializationMethodDeclaration!);
+					}
+
+					if (!string.IsNullOrEmpty(method.CustomSerializationMethodDeclaration))
+					{
+						sourceWriter.WriteLine(method.CustomSerializationMethodDeclaration!);
+					}
+				}
 			}
 
 			static string FormatParameters(MethodParameter[]? parameters)
@@ -113,6 +135,38 @@ public sealed partial class ApiClientGenerator
 					.ToArray();
 
 				return string.Join(",", @params);
+			}
+		}
+
+		private static void GenerateSourceCodeForContent(SourceWriter sourceWriter, MethodInfo method, SourceProductionContext ctx, SerializationMode serializationMode)
+		{
+			var bodyParameters = method.Parameters.Where(x => x.ParameterType == ParameterType.Body).ToArray();
+			var formParameters = method.Parameters.Where(x => x.ParameterType == ParameterType.Form).ToArray();
+			if (bodyParameters.Length > 1 || formParameters.Length > 1)
+			{
+				ctx.ReportDiagnostic(Diagnostic.Create(RuleOnlyOneBodyAllowed, Location.None));
+				return;
+			}
+
+			if (bodyParameters.Length > 0)
+			{
+				var bodyParameter = bodyParameters[0];
+				switch (serializationMode)
+				{
+					case SerializationMode.Newtonsoft:
+						sourceWriter.WriteLine($"var content = Newtonsoft.Json.JsonConvert.SerializeObject({bodyParameter.Name});");
+						break;
+					case SerializationMode.SystemTextJson:
+						sourceWriter.WriteLine($"var content = System.Text.Json.JsonSerializer.Serialize({bodyParameter.Name});"); //TODO: pre generowanei
+						break;
+					case SerializationMode.Custom:
+						sourceWriter.WriteLine($"var content = {method.Name}Seriallize({bodyParameter.Name});");
+						method.CustomSerializationMethodDeclaration = $"private partial string {method.Name}Seriallize({bodyParameter.Type} content);";
+						break;
+				}
+
+				sourceWriter.WriteLine("request.Content = new StringContent(content, System.Text.Encoding.UTF8, \"application/json\");");
+				sourceWriter.WriteLine("request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(\"application/json\");");
 			}
 		}
 
@@ -134,12 +188,17 @@ public sealed partial class ApiClientGenerator
 
 		private static string BuildUrl(string path, MethodParameter[] parameters)
 		{
+			var queryParameters = parameters.Where(x => x.ParameterType == ParameterType.Query).ToArray();
+
 			List<string> paramNames = new(parameters.Length);
 			StringBuilder urlBuilder = new(path.Length);
-			urlBuilder.Append("$\"");
+			if (queryParameters.Length > 0)
+			{
+				urlBuilder.Append("$");
+			}
+			urlBuilder.Append("\"");
 			urlBuilder.Append(path);
 
-			var queryParameters = parameters.Where(x => x.ParameterType == ParameterType.Query).ToArray();
 			if (queryParameters.Length > 0)
 			{
 				urlBuilder.Append('?');
@@ -184,7 +243,7 @@ public sealed partial class ApiClientGenerator
 			}
 		}
 
-		private static void GenerateSourceCodeForResponse(SourceWriter sourceWriter, MethodInfo method, ApiClientClassInfo apiClientClassInfo)
+		private static void GenerateSourceCodeForResponse(SourceWriter sourceWriter, MethodInfo method, ApiClientClassInfo apiClientClassInfo, SerializationMode serializationMode)
 		{
 			if (!method.ReturnType!.IsGenericReturnType)
 			{
@@ -207,12 +266,25 @@ public sealed partial class ApiClientGenerator
 					sourceWriter.BeginBlock();
 					sourceWriter.WriteLine("if (response.Content is not null)");
 					sourceWriter.BeginBlock();
-					sourceWriter.WriteLine($"var content = await response.Content.ReadAsStringAsync({GetCancellationParameter(method, apiClientClassInfo.NetCore)});");
+					sourceWriter.WriteLine($"var serializedContent = await response.Content.ReadAsStringAsync({GetCancellationParameter(method, apiClientClassInfo.NetCore)});");
 
-					sourceWriter.WriteLine("if(!string.IsNullOrEmpty(content))");
+					sourceWriter.WriteLine("if(!string.IsNullOrEmpty(serializedContent))");
 					sourceWriter.BeginBlock();
-					//sourceWriter.WriteLine($"return System.Text.Json.JsonSerializer.Deserialize<{method.ReturnType.GenericReturnType}>(content);");
-					sourceWriter.WriteLine($"return Newtonsoft.Json.JsonConvert.DeserializeObject<{method.ReturnType.GenericReturnType}>(content);");
+
+					switch (serializationMode)
+					{
+						case SerializationMode.Newtonsoft:
+							sourceWriter.WriteLine($"return Newtonsoft.Json.JsonConvert.DeserializeObject<{method.ReturnType.GenericReturnType}>(serializedContent);");
+							break;
+						case SerializationMode.SystemTextJson:
+							sourceWriter.WriteLine($"return System.Text.Json.JsonSerializer.Deserialize<{method.ReturnType.GenericReturnType}>(serializedContent);");
+							break;
+						case SerializationMode.Custom:
+							sourceWriter.WriteLine($"return {method.Name}Deseriallize(serializedContent);");
+							method.CustomDeserializationMethodDeclaration = $"private partial {method.ReturnType.GenericReturnType} {method.Name}Deseriallize(string content);";
+							break;
+					}
+
 					sourceWriter.EndBlock();
 
 					sourceWriter.EndBlock();

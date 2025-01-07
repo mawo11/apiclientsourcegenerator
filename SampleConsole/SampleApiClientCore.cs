@@ -1,11 +1,11 @@
 ﻿using SampleApi.Client.Contracts;
 
-namespace SampleApi.Client;
+namespace SampleConsole;
 
-[ApiClientGenerator()]
-public partial class SampleApiClient
+[ApiClientGenerator(NetCore = true, ConnectionTooLongWarnInMs = 50)]
+public partial class SampleApiClientCore
 {
-	public SampleApiClient(HttpClient httpClient)
+	public SampleApiClientCore(HttpClient httpClient)
 	{
 		_httpClient = httpClient;
 	}
@@ -13,10 +13,8 @@ public partial class SampleApiClient
 	[Post("/parameters-test/{id}/test/{val}")]
 	public partial Task<string> GetItemAsync(int id, string val, string val2, [AliasAs("mode")] int val4, [Fmt("yyyy-MM")] DateTime from, [Header("X-TEST: val")] string headerValue, [Header("X-ID:")] int headerId);
 
-
 	[Post("/body-json-test/")]
 	public partial Task<string> PostBodyAsync([Body] WeatherForecast body);
-
 
 	[Serialization(Serialization.Newtonsoft)]
 	[Get("/")]
@@ -32,7 +30,7 @@ public partial class SampleApiClient
 	public partial Task<bool> PingAsync();
 
 	[Get("/ping")]
-	public partial Task PingAsync(System.Threading.CancellationToken cancellationToken);
+	public partial Task PingAsync(CancellationToken cancellationToken);
 
 	[Get("/ping-bad")]
 	public partial Task<bool> PingBadAsync();

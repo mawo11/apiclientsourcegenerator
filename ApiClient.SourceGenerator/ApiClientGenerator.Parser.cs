@@ -49,12 +49,6 @@ public sealed partial class ApiClientGenerator
 						};
 
 						break;
-					case "UseILogger":
-						if (argument.Expression is LiteralExpressionSyntax useILogger && useILogger.Token.Value is not null)
-						{
-							apiClientClassInfo.UseILogger = (bool)useILogger.Token.Value;
-						}
-						break;
 					case "ConnectionTooLongWarnInMs":
 						if (argument.Expression is LiteralExpressionSyntax connectionTooLongWarnInMs && connectionTooLongWarnInMs.Token.Value is not null)
 						{

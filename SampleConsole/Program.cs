@@ -1,4 +1,5 @@
 ﻿using SampleApi.Client;
+using SampleApi.Client.Contracts;
 
 Console.WriteLine("Test sampple api client");
 
@@ -53,7 +54,13 @@ Console.WriteLine();
 Console.WriteLine("json upload test");
 
 Console.WriteLine("form field test");
+var postResult = await apiClient.PostBodyAsync(new WeatherForecast()
+{
+	Date = DateTime.Now,
+	Summary = "test upload xxxx",
+	TemperatureC = 32,
+});
+Console.WriteLine($"form field result: {postResult}");
 
-Console.WriteLine("byte array test");
 
 Console.WriteLine("conection too long warn");

@@ -11,21 +11,24 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 {
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
-		System.Diagnostics.Debugger.Launch();
+		//System.Diagnostics.Debugger.Launch();
 
-		IncrementalValueProvider<ProjectSettings> options = context.AnalyzerConfigOptionsProvider
+		IncrementalValueProvider<string?> options = context.AnalyzerConfigOptionsProvider
 			   .Select((optionsProvider, _) =>
 			   {
-				   ProjectSettings projectSettings = new();
-
 				   if (optionsProvider.GlobalOptions.TryGetValue("build_property.RootNamespace", out var value))
 				   {
-					   projectSettings.RootNamespace = value;
+					   return value;
 				   }
 
-				   return projectSettings;
+				   return null;
 			   });
 
+		IncrementalValueProvider<string?> compilationProvider = context.CompilationProvider
+		   .Select((compilationProvider, _) =>
+		   {
+			   return compilationProvider.GlobalNamespace.GetNamespaceMembers().FirstOrDefault()?.ToString();
+		   });
 		IncrementalValuesProvider<ApiClientClassInfo> apiClientClassDeclarations =
 		context.SyntaxProvider
 			   .CreateSyntaxProvider(
@@ -33,16 +36,18 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 				   transform: static (syntaxContext, _) => Parser.Parse(syntaxContext.Node as ClassDeclarationSyntax, syntaxContext.SemanticModel))
 			   .Where(static classDeclaration => classDeclaration is not null)!;
 
-		context.RegisterSourceOutput(options, static (SourceProductionContext ctx, ProjectSettings projectSetings) =>
+		context.RegisterSourceOutput(options.Combine(compilationProvider), static (SourceProductionContext ctx, (string? RootNamespace, string? GlobalNamespace) data) =>
 		{
-			ctx.AddSource("Common", SourceText.From(Encoding.UTF8.GetString(ApiClientTemplatesResources.CommonAttributes).Replace("{{ns}}", projectSetings.RootNamespace!), Encoding.UTF8));
+			ctx.AddSource("Common", SourceText.From(Encoding.UTF8.GetString(ApiClientTemplatesResources.CommonAttributes).Replace("{{ns}}", data.RootNamespace ?? data.GlobalNamespace ?? "ApiClient.Generated"), Encoding.UTF8));
 		});
 
-		context.RegisterSourceOutput(apiClientClassDeclarations.Combine(options), static (SourceProductionContext ctx, (ApiClientClassInfo ApiClientClassInfo, ProjectSettings ProjectSettings) data) =>
+		context.RegisterSourceOutput(apiClientClassDeclarations
+			.Combine(options)
+			.Combine(compilationProvider), static (SourceProductionContext ctx, ((ApiClientClassInfo ClassInfo, string? RootNamespace) ApiClientClassInfo, string? GlobalNamespace) Data) =>
 		{
-			Emitter.EmitSource(ctx, data.ApiClientClassInfo, data.ProjectSettings);
+			Data.ApiClientClassInfo.ClassInfo.CommonNamespace = Data.ApiClientClassInfo.RootNamespace ?? Data.GlobalNamespace ?? "ApiClient.Generated";
+			Emitter.EmitSource(ctx, Data.ApiClientClassInfo.ClassInfo);
 		});
-
 	}
 
 	private static bool HasAttribute(SyntaxList<AttributeListSyntax> attributeLists, string attrName)
@@ -61,13 +66,6 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		return false;
 	}
 
-	internal sealed class ProjectSettings
-	{
-		internal string? RootNamespace { get; set; }
-
-		//internal bool IsNetCore { get; set; }
-	}
-
 	internal enum SerializationMode
 	{
 		Inherit,
@@ -78,6 +76,8 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 	internal sealed class ApiClientClassInfo
 	{
+		internal string? CommonNamespace { get; set; }
+
 		internal string? Namespace { get; set; }
 
 		internal string? ClassName { get; set; }
@@ -90,26 +90,28 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 		internal SerializationMode Serialization { get; set; } = SerializationMode.Newtonsoft;
 
-		internal bool UseILogger { get; set; } = false;
-
 		internal int ConnectionTooLongWarnInMs { get; set; } = 0;
 	}
 
 	internal sealed class MethodInfo
 	{
-		public string? HttpMethod { get; set; }
+		internal string? HttpMethod { get; set; }
 
-		public string? Path { get; set; }
+		internal string? Path { get; set; }
 
-		public MethodParameter[]? Parameters { get; set; }
+		internal MethodParameter[]? Parameters { get; set; }
 
-		public ReturnType? ReturnType { get; set; }
+		internal ReturnType? ReturnType { get; set; }
 
-		public string? Name { get; set; }
+		internal string? Name { get; set; }
 
-		public bool ThrowExceptions { get; set; }
+		internal bool ThrowExceptions { get; set; }
 
 		internal SerializationMode Serialization { get; set; } = SerializationMode.Inherit;
+
+		internal string? CustomSerializationMethodDeclaration { get; set; }
+
+		internal string? CustomDeserializationMethodDeclaration { get; set; }
 	}
 
 	internal enum ParameterType
@@ -149,6 +151,7 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 		public string? ArrayItemType { get; set; }
 	}
+
 }
 
 

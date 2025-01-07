@@ -6,7 +6,5 @@ public class WeatherForecast
 
 	public int TemperatureC { get; set; }
 
-	public int TemperatureF { get; set; }
-
 	public string Summary { get; set; }
 }

@@ -22,6 +22,8 @@
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ApiClient.SourceGenerator\ApiClient.SourceGenerator.csproj" OutputItemType="Analyzer" />
+    <ProjectReference Include="..\ApiClient.SourceGenerator\ApiClient.SourceGenerator.csproj" OutputItemType="Analyzer">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 </Project>
