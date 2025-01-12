@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ApiClient.SourceGenerator;
@@ -19,7 +20,11 @@ public sealed partial class ApiClientGenerator
 				Usings = GatheringUsing(classDeclaration),
 				Namespace = GetNamespace(classDeclaration),
 				ClassName = classDeclaration.Identifier.Text,
-				Methods = GatheringMethods(classDeclaration.Members.OfType<MethodDeclarationSyntax>()),
+				Methods = GatheringMethods(classDeclaration.Members
+					.OfType<MethodDeclarationSyntax>()
+					.Where(method => method.Modifiers.Any(x => x.IsKind(SyntaxKind.PublicKeyword)))
+					.ToArray()
+				)
 			};
 
 			var arguments = classDeclaration.AttributeLists[0].Attributes[0].ArgumentList!.Arguments;
@@ -90,24 +95,30 @@ public sealed partial class ApiClientGenerator
 				var methodInfo = CheckForApiMethod(method);
 				if (methodInfo == null)
 				{
-					continue;
+					methodInfo = new()
+					{
+						MethodForGenerating = false
+					};
 				}
 
 				methodInfo.Name = method.Identifier.Text;
-				methodInfo.Parameters = GatheringParameters(method.ParameterList.Parameters, methodInfo.Path!);
+				methodInfo.Parameters = GatheringParameters(method.ParameterList.Parameters, methodInfo.Path!, methodInfo.MethodForGenerating);
 				methodInfo.ReturnType = GatheringReturnTypeInfo(method.ReturnType);
-				methodInfo.ThrowExceptions = HasAttribute(method.AttributeLists, "ThrowsExceptions");
-
-				var attribute = GetAttribute("Serialization", method.AttributeLists);
-				if (attribute is not null)
+				if (methodInfo.MethodForGenerating)
 				{
-					methodInfo.Serialization = (attribute.ArgumentList!.Arguments[0].Expression as MemberAccessExpressionSyntax)!.Name.ToString() switch
+					methodInfo.ThrowExceptions = HasAttribute(method.AttributeLists, "ThrowsExceptions");
+
+					var attribute = GetAttribute("Serialization", method.AttributeLists);
+					if (attribute is not null)
 					{
-						"Newtonsoft" => SerializationMode.Newtonsoft,
-						"SystemTextJson" => SerializationMode.SystemTextJson,
-						"Custom" => SerializationMode.Custom,
-						_ => SerializationMode.Inherit
-					};
+						methodInfo.Serialization = (attribute.ArgumentList!.Arguments[0].Expression as MemberAccessExpressionSyntax)!.Name.ToString() switch
+						{
+							"Newtonsoft" => SerializationMode.Newtonsoft,
+							"SystemTextJson" => SerializationMode.SystemTextJson,
+							"Custom" => SerializationMode.Custom,
+							_ => SerializationMode.Inherit
+						};
+					}
 				}
 
 				methods.Add(methodInfo);
@@ -116,7 +127,7 @@ public sealed partial class ApiClientGenerator
 			return [.. methods];
 		}
 
-		private static MethodParameter[]? GatheringParameters(SeparatedSyntaxList<ParameterSyntax> parameters, string path)
+		private static MethodParameter[]? GatheringParameters(SeparatedSyntaxList<ParameterSyntax> parameters, string path, bool methodForGenerating)
 		{
 			List<MethodParameter> parameterList = [];
 
@@ -129,6 +140,10 @@ public sealed partial class ApiClientGenerator
 				};
 
 				parameterList.Add(methodParameter);
+				if (!methodForGenerating)
+				{
+					continue;
+				}
 
 				var asliasAsAttribute = GetAttribute("AliasAs", parameter.AttributeLists);
 				if (asliasAsAttribute is not null && asliasAsAttribute.ArgumentList!.Arguments[0].Expression is LiteralExpressionSyntax literalExpression)
@@ -230,7 +245,8 @@ public sealed partial class ApiClientGenerator
 				return new MethodInfo
 				{
 					HttpMethod = method,
-					Path = ExtractPath(attribute.ArgumentList?.Arguments ?? [])
+					Path = ExtractPath(attribute.ArgumentList?.Arguments ?? []),
+					MethodForGenerating = true
 				};
 			}
 

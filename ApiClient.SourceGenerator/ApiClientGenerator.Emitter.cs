@@ -58,7 +58,7 @@ public sealed partial class ApiClientGenerator
 
 		private static void WriterMethodsBody(SourceWriter sourceWriter, ApiClientClassInfo apiClientClassInfo, SourceProductionContext ctx)
 		{
-			foreach (var method in apiClientClassInfo.Methods!)
+			foreach (var method in apiClientClassInfo.Methods!.Where(x => x.MethodForGenerating))
 			{
 				SerializationMode serializationMode = apiClientClassInfo.Serialization;
 				if (method.Serialization != SerializationMode.Inherit)

@@ -41,6 +41,11 @@ public partial class SampleApiClient
 	[ThrowsExceptions]
 	public partial Task<bool> PingBad2Async();
 
+	public Task DummyMethod()
+	{
+		return Task.CompletedTask;
+	}
+
 	private partial void LogError(string methodName, string path, Exception e)
 	{
 		Console.WriteLine($"{methodName} => {path}: {e}");

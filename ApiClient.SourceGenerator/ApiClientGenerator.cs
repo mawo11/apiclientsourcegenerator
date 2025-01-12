@@ -11,7 +11,7 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 {
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
-		//System.Diagnostics.Debugger.Launch();
+		System.Diagnostics.Debugger.Launch();
 
 		IncrementalValueProvider<string?> options = context.AnalyzerConfigOptionsProvider
 			   .Select((optionsProvider, _) =>
@@ -112,6 +112,8 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		internal string? CustomSerializationMethodDeclaration { get; set; }
 
 		internal string? CustomDeserializationMethodDeclaration { get; set; }
+
+		internal bool MethodForGenerating { get; set; }
 	}
 
 	internal enum ParameterType
