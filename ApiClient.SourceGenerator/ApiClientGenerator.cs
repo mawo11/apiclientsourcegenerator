@@ -11,7 +11,7 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 {
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
-		System.Diagnostics.Debugger.Launch();
+		//System.Diagnostics.Debugger.Launch();
 
 		IncrementalValueProvider<string?> options = context.AnalyzerConfigOptionsProvider
 			   .Select((optionsProvider, _) =>
@@ -90,7 +90,7 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 		internal SerializationMode Serialization { get; set; } = SerializationMode.Newtonsoft;
 
-		internal int ConnectionTooLongWarnInMs { get; set; } = 0;
+		internal int ConnectionTooLongWarn { get; set; } = 0;
 	}
 
 	internal sealed class MethodInfo
@@ -114,6 +114,8 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 		internal string? CustomDeserializationMethodDeclaration { get; set; }
 
 		internal bool MethodForGenerating { get; set; }
+
+		internal int ConnectionTooLongWarn { get; set; } = 0;
 	}
 
 	internal enum ParameterType

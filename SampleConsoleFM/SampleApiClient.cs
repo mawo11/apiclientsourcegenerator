@@ -46,8 +46,6 @@ namespace SampleConsoleFM
 		{
 			Console.WriteLine($"{methodName} => {path}: {e}");
 		}
-
-
 	}
 
 }

@@ -32,6 +32,13 @@ public sealed partial class ApiClientGenerator
 			WriterMethodsBody(sourceWriter, apiClientClassInfo, ctx);
 			sourceWriter.AppendLine();
 			sourceWriter.WriteLine("private partial void LogError(string methodName, string path, System.Exception ex);");
+			if (apiClientClassInfo.ConnectionTooLongWarn > 0 || apiClientClassInfo.Methods.Any(x => x.ConnectionTooLongWarn > 0))
+			{
+				sourceWriter.AppendLine();
+				sourceWriter.WriteLine("private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration);");
+				sourceWriter.AppendLine();
+			}
+
 			sourceWriter.EndBlock();
 			sourceWriter.EndBlock();
 
@@ -60,6 +67,8 @@ public sealed partial class ApiClientGenerator
 		{
 			foreach (var method in apiClientClassInfo.Methods!.Where(x => x.MethodForGenerating))
 			{
+				int connectionTooLongWarn = method.ConnectionTooLongWarn > 0 ? method.ConnectionTooLongWarn : apiClientClassInfo.ConnectionTooLongWarn;
+
 				SerializationMode serializationMode = apiClientClassInfo.Serialization;
 				if (method.Serialization != SerializationMode.Inherit)
 				{
@@ -74,6 +83,11 @@ public sealed partial class ApiClientGenerator
 				var url = method.Parameters!.Length > 0 ? BuildUrl(method.Path!, method.Parameters) : $"\"{method.Path}\"";
 				sourceWriter.WriteLine($"string url = {url};");
 				sourceWriter.AppendLine();
+				if (connectionTooLongWarn > 0)
+				{
+					sourceWriter.WriteLine("var watch = System.Diagnostics.Stopwatch.StartNew();");
+				}
+
 				sourceWriter.WriteLine("try");
 				sourceWriter.BeginBlock();
 				sourceWriter.WriteLine("using (var request = new System.Net.Http.HttpRequestMessage())");
@@ -105,6 +119,18 @@ public sealed partial class ApiClientGenerator
 				}
 
 				sourceWriter.EndBlock();
+				if (connectionTooLongWarn > 0)
+				{
+					sourceWriter.WriteLine("finally");
+					sourceWriter.BeginBlock();
+					sourceWriter.WriteLine("watch.Stop();");
+					sourceWriter.WriteLine($"if (watch.ElapsedMilliseconds > {connectionTooLongWarn})");
+					sourceWriter.BeginBlock();
+					sourceWriter.WriteLine($"LogConnectionTooLongWarning({classAndMethod},url, watch.ElapsedMilliseconds);");
+					sourceWriter.EndBlock();
+					sourceWriter.EndBlock();
+				}
+
 				if (method.ReturnType!.IsGenericReturnType && !method.ThrowExceptions)
 				{
 					sourceWriter.AppendLine();

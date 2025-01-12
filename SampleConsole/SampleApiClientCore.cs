@@ -2,7 +2,7 @@
 
 namespace SampleConsole;
 
-[ApiClientGenerator(NetCore = true, ConnectionTooLongWarnInMs = 50)]
+[ApiClientGenerator(NetCore = true, ConnectionTooLongWarn = 50)]
 public partial class SampleApiClientCore
 {
 	public SampleApiClientCore(HttpClient httpClient)
@@ -42,6 +42,11 @@ public partial class SampleApiClientCore
 	private partial void LogError(string methodName, string path, Exception e)
 	{
 		Console.WriteLine($"{methodName} => {path}: {e}");
+	}
+
+	private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration)
+	{
+
 	}
 }
 

@@ -54,10 +54,10 @@ public sealed partial class ApiClientGenerator
 						};
 
 						break;
-					case "ConnectionTooLongWarnInMs":
+					case "ConnectionTooLongWarn":
 						if (argument.Expression is LiteralExpressionSyntax connectionTooLongWarnInMs && connectionTooLongWarnInMs.Token.Value is not null)
 						{
-							apiClientClassInfo.ConnectionTooLongWarnInMs = (int)connectionTooLongWarnInMs.Token.Value;
+							apiClientClassInfo.ConnectionTooLongWarn = (int)connectionTooLongWarnInMs.Token.Value;
 						}
 						break;
 				}
@@ -107,6 +107,11 @@ public sealed partial class ApiClientGenerator
 				if (methodInfo.MethodForGenerating)
 				{
 					methodInfo.ThrowExceptions = HasAttribute(method.AttributeLists, "ThrowsExceptions");
+					var connectionTooLongWarnAttribute = GetAttribute("ConnectionTooLongWarn", method.AttributeLists);
+					if (connectionTooLongWarnAttribute != null && connectionTooLongWarnAttribute.ArgumentList!.Arguments[0].Expression is LiteralExpressionSyntax connectionTooLongWarn)
+					{
+						methodInfo.ConnectionTooLongWarn = (int)connectionTooLongWarn.Token.Value!;
+					}
 
 					var attribute = GetAttribute("Serialization", method.AttributeLists);
 					if (attribute is not null)

@@ -10,7 +10,7 @@ public partial class SampleApiClient
 		_httpClient = httpClient;
 	}
 
-	[Post("/parameters-test/{id}/test/{val}")]
+	[Post("/parameters-test/{id}/test/{val}"), ConnectionTooLongWarn(100)]
 	public partial Task<string> GetItemAsync(int id, string val, string val2, [AliasAs("mode")] int val4, [Fmt("yyyy-MM")] DateTime from, [Header("X-TEST: val")] string headerValue, [Header("X-ID:")] int headerId);
 
 
@@ -49,6 +49,11 @@ public partial class SampleApiClient
 	private partial void LogError(string methodName, string path, Exception e)
 	{
 		Console.WriteLine($"{methodName} => {path}: {e}");
+	}
+
+	private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration)
+	{
+
 	}
 }
 

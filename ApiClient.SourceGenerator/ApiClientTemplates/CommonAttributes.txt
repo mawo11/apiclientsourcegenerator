@@ -18,7 +18,7 @@ namespace {{ns}}
         
         public Serialization Serialization { get; set; } = Serialization.Newtonsoft;
 
-        public int ConnectionTooLongWarnInMs { get; set; } = 100;
+        public int ConnectionTooLongWarn { get; set; } = 100;
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
@@ -82,9 +82,9 @@ namespace {{ns}}
 	}
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-	public class ConnectionTooLongWarnInMsAttribute : Attribute
+	public class ConnectionTooLongWarnAttribute : Attribute
 	{
-		public ConnectionTooLongWarnInMsAttribute(int connectionTooLongWarnInMs)
+		public ConnectionTooLongWarnAttribute(int connectionTooLongWarnInMs)
 		{
 			ConnectionTooLongWarnInMs = connectionTooLongWarnInMs;
 		}
