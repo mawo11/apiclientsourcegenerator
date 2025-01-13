@@ -46,7 +46,7 @@ public partial class SampleApiClientCore
 
 	private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration)
 	{
-
+		Console.WriteLine($"connection to long => {methodName} => {path}: time: {connectionDuration}ms");
 	}
 }
 

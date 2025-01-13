@@ -130,30 +130,30 @@ public sealed partial class ApiClientGenerator : IIncrementalGenerator
 
 	internal sealed class MethodParameter
 	{
-		public string? Name { get; set; }
+		internal string? Name { get; set; }
 
-		public string? Type { get; set; }
+		internal string? Type { get; set; }
 
-		public ParameterType ParameterType { get; set; }
+		internal ParameterType ParameterType { get; set; }
 
-		public string? AliasAs { get; set; }
+		internal string? AliasAs { get; set; }
 
-		public string? Fmt { get; set; }
+		internal string? Fmt { get; set; }
 
-		public string? Header { get; set; }
+		internal string? Header { get; set; }
 	}
 
 	internal sealed class ReturnType
 	{
-		public string? Type { get; set; }
+		internal string? Type { get; set; }
 
-		public bool IsGenericReturnType { get; set; }
+		internal bool IsGenericReturnType { get; set; }
 
-		public string? GenericReturnType { get; set; }
+		internal string? GenericReturnType { get; set; }
 
-		public bool IsArray { get; set; }
+		internal bool IsArray { get; set; }
 
-		public string? ArrayItemType { get; set; }
+		internal string? ArrayItemType { get; set; }
 	}
 
 }
