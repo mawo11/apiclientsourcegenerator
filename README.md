@@ -9,15 +9,18 @@ ApiClientGenerator
 | ------- | ---- |
 | NetCore |  true - jeśli chcemy używać kodu per .NET |
 | Serialization  | (Newtonsoft, SystemTextJson, Custom) - Globalna obsługa serializacji |
-| ConnectionTooLongWarn = ms|  jeśli zostanie przekroczony czas to zostanie wywowała metoda private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) |
+| ConnectionTooLongWarn(int) |  Timeout w ms po przekroczeniu którego zostanie wywowałana metoda LogConnectionTooLongWarning. Dla wszystkich metod w klasie  |
 
      
 # Atrybuty metod
 | Atrybut | Opis |
 | ------- | ---- |
-| CGet/Put/Post/Delete  | argument ścieżka w api|
-| CThrowsExceptionsAttribute |jeśli metoda ma rzucać wyjątki|
-| CConnectionTooLongWarn |ms jeśli zostanie przekroczony czas to zostanie wywowała metoda private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) |
+| Get(string) | Zasób url, Metoda HTTP Get |
+| Post(string)  | Zasób url, Metoda HTTP Post  |
+| Put(string)  | Zasób url, Metoda HTTP Put  |
+| Delete(string)  | Zasób url, Metoda HTTP Delete  |
+| CThrowsExceptionsAttribute | Jeśli jest podany, metoda będzie przekazywać wyjątki po uprzedniu wywołaniu metody do logowania błędów |
+| ConnectionTooLongWarn(int) |  Timeout w ms po przekroczeniu którego zostanie wywowałana metoda LogConnectionTooLongWarning. |
 
 # Atrybuty parametrów
 | Atrybut | Opis |
@@ -26,3 +29,7 @@ ApiClientGenerator
 | CBody | wartość będzie przesyłana jak contentn json (Form = false, domyślnie ) lub jako form encoded(Form = true)|
 | CFmt(string) | ciągu formatujący daną wartość, używane jest wywołanie metody ToString(...)|
 | CHeader(string) | wartość jest przesyłana jako nagłówek w zapytaniu |
+
+# Metody prywatne wymagane do implementacji 
+private partial void LogError(string methodName, string path, System.Exception ex) - Metoda umożliwiająca logowanie błędów 
+private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) - metoda umożliwiająca logowania wydłużonego czasu działania metody 
