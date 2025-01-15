@@ -1,13 +1,15 @@
-#Generator kodu klienta API
+# Generator kodu klienta API
 
 Rozwiązanie ma celu generowanie kodu klient HTTP w czasie kompilacji. Ma to na celu przyśpieszyć tworzenie klientów oraz generować najbardziej optymalny kod klienta. Klasa musi być partial. Każda publiczna metoda jest wpisywana w generowany interfejs.  Metody, które mają mieć wygenerowany kod muszą zostać zdefiniowane jako partial z odpowiednim atrybutami 
 
-#Atrybuty klasy
+# Atrybuty klasy
 
 ApiClientGenerator
-    NetCore = true - jeśli chcemy używać kodu per .NET 
-    Serialization  (Newtonsoft, SystemTextJson, Custom) - Globalna obsługa serializacji 
-    ConnectionTooLongWarn = ms - jeśli zostanie przekroczony czas to zostanie wywowała metoda private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) 
+| Atrybut | Opis |
+| ------- | ---- |
+| NetCore |  true - jeśli chcemy używać kodu per .NET |
+| Serialization  | (Newtonsoft, SystemTextJson, Custom) - Globalna obsługa serializacji |
+| ConnectionTooLongWarn = ms| - jeśli zostanie przekroczony czas to zostanie wywowała metoda private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) |
 
      
 # Atrybuty metod
