@@ -38,4 +38,4 @@ ApiClientGenerator
     - private partial void LogError(string methodName, string path, System.Exception ex) 
     - private partial  void LogError(string methodName, string path, string message)
 * A method that allows logging of extended method execution time if the ConnectionTooLongWarn attribute is defined on any method or globally in the ApiClientGenerator attribute.
-    - private partial  void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) - 
+    - private partial  void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration)
