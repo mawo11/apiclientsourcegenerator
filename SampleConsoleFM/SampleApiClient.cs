@@ -46,6 +46,11 @@ namespace SampleConsoleFM
 		{
 			Console.WriteLine($"{methodName} => {path}: {e}");
 		}
+
+		private partial void LogError(string methodName, string path, string message)
+		{
+			Console.WriteLine($"{methodName} => {path}: {message}");
+		}
 	}
 
 }

@@ -63,4 +63,24 @@ var postResult = await apiClient.PostBodyAsync(new WeatherForecast()
 Console.WriteLine($"form field result: {postResult}");
 
 
-Console.WriteLine("conection too long warn");
+Console.WriteLine("");
+Console.WriteLine("Another approach to resolve url");
+SampleConsole.SampleApiClientCore apiClientCore = new SampleConsole.SampleApiClientCore(new HttpClient
+{
+	BaseAddress = new Uri("http://localhost:5000/api")
+});
+
+var postResultTest = await apiClientCore.PostBodyAsync(new WeatherForecast()
+{
+	Date = DateTime.Now.Date,
+	Summary = "test upload xxxx",
+	TemperatureC = 32,
+});
+
+Console.WriteLine("form field result: ");
+foreach (TestData item in postResultTest)
+{
+	Console.WriteLine($"Id: {item.Id}, Name: {item.Name}, Data: {item.DateTime}");
+}
+
+

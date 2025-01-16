@@ -87,6 +87,26 @@ app.MapPost("/body-json-test", ([FromBody] WeatherForecast weatherForecast) =>
 	return TypedResults.Ok(items);
 });
 
+app.MapPost("/api/magic-test", ([FromBody] WeatherForecast weatherForecast) =>
+{
+	TestData[] items = [
+		 new TestData {
+			 Id = 1,
+			 Name = $"we: {weatherForecast.Date} -> {weatherForecast.TemperatureC} {weatherForecast.Summary} ",
+			  DateTime = DateTime.Now,
+			   Ids = [1,2,2,3]
+		 },
+		 new TestData {
+			 Id = 2,
+			 Name = "second item",
+			  DateTime = DateTime.Now,
+			   Ids = [21,22,22,23]
+		 }
+
+		];
+	return TypedResults.Ok(items);
+});
+
 app.MapSwagger();
 
 app.Run();

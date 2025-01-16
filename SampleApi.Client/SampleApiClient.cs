@@ -51,6 +51,11 @@ public partial class SampleApiClient
 		Console.WriteLine($"{methodName} => {path}: {e}");
 	}
 
+	private partial void LogError(string methodName, string path, string message)
+	{
+		Console.WriteLine($"{methodName} => {path}: {message}");
+	}
+
 	private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration)
 	{
 		Console.WriteLine($"connection to long => {methodName} => {path}: time: {connectionDuration}ms");

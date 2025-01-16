@@ -32,6 +32,7 @@ public sealed partial class ApiClientGenerator
 			WriterMethodsBody(sourceWriter, apiClientClassInfo, ctx);
 			sourceWriter.AppendLine();
 			sourceWriter.WriteLine("private partial void LogError(string methodName, string path, System.Exception ex);");
+			sourceWriter.WriteLine("private partial void LogError(string methodName, string path, string message);");
 			if (apiClientClassInfo.ConnectionTooLongWarn > 0 || apiClientClassInfo.Methods.Any(x => x.ConnectionTooLongWarn > 0))
 			{
 				sourceWriter.AppendLine();
@@ -80,8 +81,18 @@ public sealed partial class ApiClientGenerator
 
 				sourceWriter.WriteLine($"public partial async {FormatReturnType(method.ReturnType!)} {method.Name}({FormatParameters(method.Parameters)})");
 				sourceWriter.BeginBlock();
+
 				var url = method.Parameters!.Length > 0 ? BuildUrl(method.Path!, method.Parameters) : $"\"{method.Path}\"";
 				sourceWriter.WriteLine($"string url = {url};");
+				if (method.Path!.StartsWith("/"))
+				{
+					sourceWriter.WriteLine("if(_httpClient.BaseAddress.OriginalString.EndsWith(\"/\"))");
+					sourceWriter.BeginBlock();
+					sourceWriter.WriteLine(" url = url.TrimStart('/');");
+					sourceWriter.EndBlock();
+				}
+
+				sourceWriter.WriteLine("var fullUrl = $\"{_httpClient.BaseAddress.OriginalString}{url}\";");
 				sourceWriter.AppendLine();
 				if (connectionTooLongWarn > 0)
 				{
@@ -93,7 +104,7 @@ public sealed partial class ApiClientGenerator
 				sourceWriter.WriteLine("using (var request = new System.Net.Http.HttpRequestMessage())");
 				sourceWriter.BeginBlock();
 				sourceWriter.WriteLine($"request.Method = System.Net.Http.HttpMethod.{method.HttpMethod};");
-				sourceWriter.WriteLine("request.RequestUri = new System.Uri(url, System.UriKind.RelativeOrAbsolute);");
+				sourceWriter.WriteLine("request.RequestUri = new System.Uri(fullUrl);");
 				GenerateSourceCodeForHeaders(sourceWriter, method);
 				GenerateSourceCodeForContent(sourceWriter, method, ctx, serializationMode);
 				var cancellationParameter = method.Parameters!.FirstOrDefault(x => x.Type!.EndsWith("CancellationToken"));
@@ -104,7 +115,7 @@ public sealed partial class ApiClientGenerator
 
 				sourceWriter.BeginBlock();
 
-				GenerateSourceCodeForCheckResponse(sourceWriter, method);
+				GenerateSourceCodeForCheckResponse(sourceWriter, method, apiClientClassInfo);
 				GenerateSourceCodeForResponse(sourceWriter, method, apiClientClassInfo, serializationMode);
 
 				sourceWriter.EndBlock();
@@ -112,7 +123,7 @@ public sealed partial class ApiClientGenerator
 				sourceWriter.EndBlock();
 				sourceWriter.WriteLine("catch(System.Exception e)");
 				sourceWriter.BeginBlock();
-				sourceWriter.WriteLine($"LogError({classAndMethod},url, e);");
+				sourceWriter.WriteLine($"LogError({classAndMethod},fullUrl, e);");
 				if (method.ThrowExceptions)
 				{
 					sourceWriter.WriteLine("throw;");
@@ -126,12 +137,12 @@ public sealed partial class ApiClientGenerator
 					sourceWriter.WriteLine("watch.Stop();");
 					sourceWriter.WriteLine($"if (watch.ElapsedMilliseconds > {connectionTooLongWarn})");
 					sourceWriter.BeginBlock();
-					sourceWriter.WriteLine($"LogConnectionTooLongWarning({classAndMethod},url, watch.ElapsedMilliseconds);");
+					sourceWriter.WriteLine($"LogConnectionTooLongWarning({classAndMethod},fullUrl, watch.ElapsedMilliseconds);");
 					sourceWriter.EndBlock();
 					sourceWriter.EndBlock();
 				}
 
-				if (method.ReturnType!.IsGenericReturnType && !method.ThrowExceptions)
+				if (method.ReturnType!.IsGenericReturnType)
 				{
 					sourceWriter.AppendLine();
 					sourceWriter.WriteLine($"return {DefaultReturnType(method)};");
@@ -254,7 +265,7 @@ public sealed partial class ApiClientGenerator
 			return urlBuilder.ToString();
 		}
 
-		private static void GenerateSourceCodeForCheckResponse(SourceWriter sourceWriter, MethodInfo method)
+		private static void GenerateSourceCodeForCheckResponse(SourceWriter sourceWriter, MethodInfo method, ApiClientClassInfo apiClientClassInfo)
 		{
 			if (method.ThrowExceptions || !method.ReturnType!.IsGenericReturnType)
 			{
@@ -262,8 +273,11 @@ public sealed partial class ApiClientGenerator
 			}
 			else
 			{
+				var classAndMethod = $"\"{apiClientClassInfo.ClassName}.{method.Name}\"";
+
 				sourceWriter.WriteLine("if (!response.IsSuccessStatusCode)");
 				sourceWriter.BeginBlock();
+				sourceWriter.WriteLine($"LogError({classAndMethod},url, response.StatusCode.ToString());");
 				sourceWriter.WriteLine(method.ReturnType!.IsGenericReturnType ? $"return {DefaultReturnType(method)};" : "return;");
 				sourceWriter.EndBlock();
 			}

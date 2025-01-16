@@ -1,22 +1,41 @@
-#Generator kodu klienta API
+# API Client Code Generator
 
-Rozwiązanie ma celu generowanie kodu klient HTTP w czasie kompilacji. Ma to na celu przyśpieszyć tworzenie klientów oraz generować najbardziej optymalny kod klienta. Klasa musi być partial. Każda publiczna metoda jest wpisywana w generowany interfejs.  Metody, które mają mieć wygenerowany kod muszą zostać zdefiniowane jako partial z odpowiednim atrybutami 
+The solution aims to generate HTTP client code at compile time. The aim is to speed up the creation of clients and generate the most optimal client code. The class must be partial. Every public method is written into the generated interface.Methods that are to have generated code must be defined as partial with the appropriate attributes.
 
-#Atrybuty klasy
+# Class attributes
 
 ApiClientGenerator
-    NetCore = true - jeśli chcemy używać kodu per .NET 
-    Serialization  (Newtonsoft, SystemTextJson, Custom) - Globalna obsługa serializacji 
-    ConnectionTooLongWarn = ms - jeśli zostanie przekroczony czas to zostanie wywowała metoda private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) 
 
-     
-# Atrybuty metod
-Get/Put/Post/Delete  - argument ścieżka w api
-ThrowsExceptionsAttribute - jeśli metoda ma rzucać wyjątki
-ConnectionTooLongWarn = ms jeśli zostanie przekroczony czas to zostanie wywowała metoda private partial void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) 
+| Attribute | Description | 
+| ------- | ---- |
+| NetCore | true - if we want to use the code per .NET |
+| Serialization | (Newtonsoft, SystemTextJson, Custom) - Global serialization support |
+| ConnectionTooLongWarn(int) | Timeout in ms after which the LogConnectionTooLongWarning method will be invoked. For all methods in the class |
 
-Atrybuty parametrów
-AliasAs(string) - nazwa parametru w query 
-Body - wartość będzie przesyłana jak contentn json (Form = false, domyślnie ) lub jako form encoded(Form = true)
-Fmt(string) - ciągu formatujący daną wartość, używane jest wywołanie metody ToString(...)
-Header(string) wartość jest przesyłana jako nagłówek w zapytaniu 
+# Method Attributes
+
+| Attribute | Description | 
+| ------- | ---- |
+| Get(string) | URL resource, HTTP Get method |
+| Post(string) | URL resource, HTTP Post method |
+| Put(string)  | URL resource, HTTP Put method  |
+| Delete(string)  | URL resource, HTTP Delete method  |
+| CThrowsExceptionsAttribute | If provided, the method will pass exceptions after calling the error logging method|
+| ConnectionTooLongWarn(int) | Timeout in ms after which the method LogConnectionTooLongWarning will be invoked.|
+
+# Parameter Attributes
+
+| Attribute | Description | 
+| ------- | ---- |
+| Context:   | CAliasAs(string) | parameter name in query |  \nText to translate: | CAliasAs(string) | parameter name in query |
+| CBody | the value will be sent as JSON content (Form = false, by default) or as form encoded (Form = true) |
+| CFmt(string) | a string formatting the given value, the ToString(...) method is used |
+| CHeader(string) | the value is sent as a header in the request |
+
+# Private methods required for implementation
+
+private partial void LogError(string methodName, string path, System.Exception ex) - Method enabling error logging
+
+private partial  void LogError(string methodName, string path, string message) - Method enabling error logging
+
+private partial  void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) - a method that allows logging of extended method execution time if the ConnectionTooLongWarn attribute is defined on any method or globally in the ApiClientGenerator attribute.
