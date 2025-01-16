@@ -20,7 +20,7 @@ ApiClientGenerator
 | Post(string) | URL resource, HTTP Post method |
 | Put(string)  | URL resource, HTTP Put method  |
 | Delete(string)  | URL resource, HTTP Delete method  |
-| CThrowsExceptionsAttribute | If provided, the method will pass exceptions after calling the error logging method|
+| ThrowsExceptionsAttribute | If provided, the method will pass exceptions after calling the error logging method|
 | ConnectionTooLongWarn(int) | Timeout in ms after which the method LogConnectionTooLongWarning will be invoked.|
 
 # Parameter Attributes
@@ -28,14 +28,14 @@ ApiClientGenerator
 | Attribute | Description | 
 | ------- | ---- |
 | Context:   | CAliasAs(string) | parameter name in query |  \nText to translate: | CAliasAs(string) | parameter name in query |
-| CBody | the value will be sent as JSON content (Form = false, by default) or as form encoded (Form = true) |
-| CFmt(string) | a string formatting the given value, the ToString(...) method is used |
-| CHeader(string) | the value is sent as a header in the request |
+| Body | the value will be sent as JSON content (Form = false, by default) or as form encoded (Form = true) |
+| Fmt(string) | a string formatting the given value, the ToString(...) method is used |
+| Header(string) | the value is sent as a header in the request |
 
 # Private methods required for implementation
 
-private partial void LogError(string methodName, string path, System.Exception ex) - Method enabling error logging
-
-private partial  void LogError(string methodName, string path, string message) - Method enabling error logging
-
-private partial  void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) - a method that allows logging of extended method execution time if the ConnectionTooLongWarn attribute is defined on any method or globally in the ApiClientGenerator attribute.
+* Method enabling error logging<br/>
+    - private partial void LogError(string methodName, string path, System.Exception ex) 
+    - private partial  void LogError(string methodName, string path, string message) - Method enabling error logging
+* A method that allows logging of extended method execution time if the ConnectionTooLongWarn attribute is defined on any method or globally in the ApiClientGenerator attribute.
+    - private partial  void LogConnectionTooLongWarning(string methodName, string path, long connectionDuration) - 
